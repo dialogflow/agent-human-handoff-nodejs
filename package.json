@@ -1,0 +1,16 @@
+{
+  "name": "agent-human-handoff-sample",
+  "version": "0.0.1",
+  "description": "Code sample for agent-human handoff with API.AI",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Google Inc.",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "apiai": "^4.0.2",
+    "express": "^4.15.3",
+    "socket.io": "^2.0.1"
+  }
+}

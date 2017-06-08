@@ -1,0 +1,201 @@
+<!doctype html>
+<!--
+Copyright 2017, Google, Inc.
+Licensed under the Apache License, Version 2.0 (the 'License');
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+   http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an 'AS IS' BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+<html>
+  <head>
+    <title>Operator Interface</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      body { font: 13px Helvetica, Arial; }
+      h1 { text-align: center; padding: 20px; }
+      form { background: #000; padding: 3px; position: fixed; bottom: 0; width: 100%; }
+      form input { border: 0; padding: 10px; width: 90%; margin-right: .5%; }
+      form button { width: 9%; background: rgb(130, 224, 255); border: none; padding: 10px; }
+      #chatTabs { list-style-type: none; margin: 0; padding: 0; }
+      #chatTabs li.chat-tab { padding: 5px; float: left; border: 1px solid black; border-radius: 10px 10px 0 0; cursor: default; }
+      #chatTabs li.chat-tab.selected { font-weight: bold; color: white; background-color: black; }
+      #chatWindows { clear: left; border-top: 1px solid black; }
+      ul.chat-window { list-style-type: none; margin: 0; padding: 0; }
+      ul.chat-window li { padding: 5px 10px; }
+      ul.chat-window li.operator-message { color: blue; }
+      ul.chat-window li.operator-error { color: red; }
+      ul.chat-window li.operator-message::before { content: "> " }
+      ul.chat-window li.customer-message { }
+      ul.chat-window li.agent-response { font-style: italic; }
+      ul.chat-window li:nth-child(odd) { background: #eee; }
+    </style>
+  </head>
+  <body>
+    <h1>Operator</h1>
+    <ul id="chatTabs">
+    </ul>
+    <div id="chatWindows">
+    </div>
+    <form>
+      <input id="m" autocomplete="off" /><button>Send</button>
+    </form>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.12.4/jquery.min.js"></script>
+    <script>
+      $(function () {
+        var socket = io('/operator');
+
+        // UI elements for all the customers we currently aware of
+        var connectedCustomers = {};
+        // Pointer to the currently open tab
+        var currentTab;
+
+        // The format we use to communicate a message to a specific customer
+        var messageObject = function(customerId, utterance) {
+          return { customerId: customerId, utterance: utterance };
+        };
+
+        // When the form is submitted, send an operator message to the server, referencing
+        // the current tab's customer
+        $('form').submit(function(){
+          if(currentTab.disconnected) {
+            alert('This customer has disconnected');
+            return false;
+          }
+          var messageText = $('#m').val();
+          socket.emit('operator message', messageObject(currentTab.customerId, messageText));
+          $('#m').val('');
+          return false;
+        });
+
+        // Switch to a different tab
+        var setCurrentTab = function(target) {
+            // Do nothing if this is already the current tab
+            if(currentTab === target) return;
+            // Set the current tab
+            currentTab = target;
+            // Remove any other selected tab
+            $('li.chat-tab').removeClass('selected');
+            // Mark this tab as selected
+            target.tab.addClass('selected');
+            // Hide any other chat windows
+            $('.chat-window').hide();
+            // Show this chat window
+            target.window.show();
+        };
+
+        // Create a set of UI elements for a new customer tab.
+        // The customerId is the ID used internally by for websocket communication.
+        // In your implementation, you could replace this with the customer's name
+        // after fetching it from your datastore.
+        var createNewCustomerTab = function(customerId) {
+          var newChatElements = {};
+          newChatElements.customerId = customerId;
+          // A tab displaying the customer id
+          newChatElements.tab = $('<li class="chat-tab">').text(customerId);
+          // The chat log for this customer
+          newChatElements.window = $('<ul class="chat-window">').hide();
+
+          var clickHandler = function() {
+            setCurrentTab(newChatElements);
+          };
+          newChatElements.tab.click(clickHandler);
+
+          connectedCustomers[customerId] = newChatElements;
+
+          if(!currentTab) {
+            console.log('Setting current tab');
+            clickHandler();
+          }
+
+          $('#chatTabs').append(newChatElements.tab);
+          $('#chatWindows').append(newChatElements.window);
+        };
+
+        // Notify the operator that a customer has requested them
+        var notifyOperatorRequest = function(customerId) {
+          if(!connectedCustomers[customerId]) {
+            console.log('Received operator request from unknown customer id: ' + customerId);
+            return;
+          }
+          setCurrentTab(connectedCustomers[customerId]);
+          alert('Operator requested!');
+        };
+
+        // Notify the operator that a customer has disconnected
+        var notifyCustomerDisconnected = function(customerId) {
+          if(!connectedCustomers[customerId]) {
+            console.log('Received disconnect notification for unknown customer id: ' + customerId);
+            return;
+          }
+          connectedCustomers[customerId].disconnected = true;
+          connectedCustomers[customerId]
+            .window
+            .append($('<li class="customer-message">')
+            .text('--- Customer disconnected ---'));
+
+        };
+
+        // Notify the operator of a system error
+        var notifySystemError = function(error) {
+          var errorText;
+          // If we get this custom error type, the error was due to an operator mistake; display it
+          // in a friendlier manner (without the word 'Error')
+          if(error.type === 'CustomerModeError') {
+            errorText = error.message;
+          // Otherwise, print the error type and message
+          } else {
+            errorText = error.type + ' - ' + error.message;
+          }
+          console.log(errorText);
+          if(!currentTab) return;
+          currentTab.window.append($('<li class="operator-error">').text(errorText));
+        };
+
+        // Display messages sent by any operator to the customers this operator knows about
+        var receivedOperatorMessage = function(msg) {
+          var customer = connectedCustomers[msg.customerId];
+          if(!customer) {
+            console.log('Received operator message to unknown customer id: ' + JSON.stringify(msg));
+            return;
+          }
+          customer.window
+            .append($('<li class="operator-message">').text(msg.utterance));
+        };
+
+        // Display messages sent by customers
+        var receivedCustomerMessage = function(msg) {
+          if(!connectedCustomers[msg.customerId]) {
+            console.log('Received message for unknown customer id: ' + JSON.stringify(msg));
+            return;
+          }
+          // If your implementation has access to the customer's name,
+          // you can modify the next line to display it in the prefix.
+          var prefix = msg.isAgentResponse ? 'Agent: ' : 'Customer: ';
+          connectedCustomers[msg.customerId]
+            .window
+            .append($('<li class="customer-message">')
+            .toggleClass('agent-response', msg.isAgentResponse)
+            .text(prefix + msg.utterance));
+        };
+
+        // Attach all our event handlers
+        socket.on('customer connected', createNewCustomerTab);
+        socket.on('customer message', receivedCustomerMessage);
+        socket.on('operator requested', notifyOperatorRequest);
+        socket.on('operator message', receivedOperatorMessage);
+        socket.on('customer disconnected', notifyCustomerDisconnected);
+        socket.on('system error', notifySystemError);
+
+      });
+    </script>
+  </body>
+</html>
+
