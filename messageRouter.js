@@ -16,11 +16,13 @@ const CustomerStore = require('./customerStore.js');
 const CustomerConnectionHandler = require('./customerConnectionHandler.js');
 const OperatorConnectionHandler = require('./operatorConnectionHandler.js');
 
-// Routes messages between connected customers, operators and API.AI agent
+// Routes messages between connected customers, operators and Dialogflow agent
 class MessageRouter {
-  constructor (customerStore, apiAiApp, customerRoom, operatorRoom) {
-    // An API.AI client instance
-    this.apiAiApp = apiAiApp;
+  constructor ({ customerStore, dialogflowClient, projectId, customerRoom, operatorRoom }) {
+    // Dialogflow client instance
+    this.client = dialogflowClient;
+    // Dialogflow project id
+    this.projectId = projectId;
     // An object that handles customer data persistence
     this.customerStore = customerStore;
     // Socket.io rooms for customers and operators
@@ -78,11 +80,12 @@ class MessageRouter {
     // we now send this utterance to all operators
     return this._sendUtteranceToOperator(utterance, customer)
       .then(() => {
-        // So all of our logs end up in API.AI, we'll always send the utterance to the
-        // agent - even if the customer is in operator mode.
+        // So all of our logs end up in Dialogflow (for use in training and history),
+        // we'll always send the utterance to the agent - even if the customer is in operator mode.
         return this._sendUtteranceToAgent(utterance, customer);
       })
-      .then(response => {
+      .then(responses => {
+        const response = responses[0];
         // If the customer is in agent mode, we'll forward the agent's response to the customer.
         // If not, just discard the agent's response.
         if (customer.mode === CustomerStore.MODE_AGENT) {
@@ -92,7 +95,7 @@ class MessageRouter {
             return this._switchToOperator(customerId, customer, response);
           }
           // If not in operator mode, just grab the agent's response
-          const speech = response.result.fulfillment.speech;
+          const speech = response.queryResult.fulfillmentText;
           // Send the agent's response to the operator so they see both sides
           // of the conversation.
           this._sendUtteranceToOperator(speech, customer, true);
@@ -102,29 +105,34 @@ class MessageRouter {
       });
   }
 
-  // Uses the API.AI client to send a 'WELCOME' event to the agent, starting the conversation.
+  // Uses the Dialogflow client to send a 'WELCOME' event to the agent, starting the conversation.
   _sendEventToAgent (customer) {
     console.log('Sending WELCOME event to agent');
-    const request = this.apiAiApp.eventRequest({ name: 'WELCOME' }, { sessionId: customer.id });
-    // Return a promise from this function for our convenience in handling the async call
-    const promise = new Promise((resolve, reject) => {
-      request.on('response', resolve);
-      request.on('error', reject);
+    return this.client.detectIntent({
+      // Use the customer ID as Dialogflow's session ID
+      session: this.client.sessionPath(this.projectId, customer.id),
+      queryInput: {
+        event: {
+          name: 'WELCOME',
+          languageCode: 'en'
+        }
+      }
     });
-    request.end();
-    return promise;
   }
 
-  // Sends an utterance to API.AI and returns a promise with API response.
+  // Sends an utterance to Dialogflow and returns a promise with API response.
   _sendUtteranceToAgent (utterance, customer) {
     console.log('Sending utterance to agent');
-    const request = this.apiAiApp.textRequest(utterance, { sessionId: customer.id });
-    const promise = new Promise((resolve, reject) => {
-      request.on('response', resolve);
-      request.on('error', reject);
+    return this.client.detectIntent({
+      // Use the customer ID as Dialogflow's session ID
+      session: this.client.sessionPath(this.projectId, customer.id),
+      queryInput: {
+        text: {
+          text: utterance,
+          languageCode: 'en'
+        }
+      }
     });
-    request.end();
-    return promise;
   }
 
   // Send an utterance, or an array of utterances, to the operator channel so that
@@ -162,13 +170,18 @@ class MessageRouter {
     };
   }
 
-  // Examines the context from the API.AI response and returns a boolean
+  // Examines the context from the Dialogflow response and returns a boolean
   // indicating whether the agent placed the customer in operator mode
   _checkOperatorMode (apiResponse) {
-    let contexts = apiResponse.result.contexts;
+    let contexts = apiResponse.queryResult.outputContexts;
     let operatorMode = false;
     for (const context of contexts) {
-      if (context.name === AppConstants.CONTEXT_OPERATOR_REQUEST) {
+      // The context name is returned as a long string, including the project ID, separated
+      // by / characters. To get the context name defined in Dialogflow, we should take the
+      // final portion.
+      const parts = context.name.split('/');
+      const name = parts[parts.length - 1];
+      if (name === AppConstants.CONTEXT_OPERATOR_REQUEST) {
         operatorMode = true;
         break;
       }
@@ -185,9 +198,9 @@ class MessageRouter {
       .setCustomer(customerId, customer)
       .then(this._notifyOperatorOfSwitch(customerId, customer))
       .then(() => {
-        // We return an array of two responses: the last utterance from the API.AI agent,
+        // We return an array of two responses: the last utterance from the Dialogflow agent,
         // and a mock "human" response introducing the operator.
-        const output = [ response.result.fulfillment.speech, AppConstants.OPERATOR_GREETING ];
+        const output = [ response.queryResult.fulfillmentText, AppConstants.OPERATOR_GREETING ];
         // Also send everything to the operator so they can see how the agent responded
         this._sendUtteranceToOperator(output, customer, true);
         return output;

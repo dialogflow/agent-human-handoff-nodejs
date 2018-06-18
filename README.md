@@ -1,8 +1,8 @@
-# API.AI: Agent to Human Handoff Sample
+# Dialogflow: Agent to Human Handoff Sample
 
-This sample consists of a simple API.AI agent, a node.js server and a web
+This sample consists of a simple Dialogflow agent, a node.js server and a web
 interface that together demonstrate an approach for handing text-based conversations
-from an API.AI agent to a human operator.
+from an Dialogflow agent to a human operator.
 
 **This extensively commented sample is designed as a learning tool and a platform for
 experimentation, not a finished solution.**
@@ -26,7 +26,7 @@ connected customers are ignored.
 * User interface is very rudimentary.
 
 ### Technology Stack
-* [API.AI](https://api.ai/)
+* [Dialogflow](https://dialogflow.com/)
 * [Node.js](https://nodejs.org/en/) v6.9.1+
 * [Express.js](https://expressjs.com/)
 * [Socket.IO](https://socket.io/)
@@ -34,8 +34,8 @@ connected customers are ignored.
 
 ## Setup Instructions
 
-### Part A: Steps for API.AI
-1. Log in to the [API.AI Console](https://console.api.ai).
+### Part A: Steps for Dialogflow
+1. Log in to the [Dialogflow Console](https://console.dialogflow.com).
 1. Create a new agent using the dropdown at the top of the left hand menu, next to the gear icon.
 If the menu is not visible, click the icon with three horizontal lines to open it.
 1. Type a name for your agent. Any name will work, but `agent-human-handoff-sample` is suggested.
@@ -49,11 +49,16 @@ If the menu is not visible, click the icon with three horizontal lines to open i
 1. Clone or download the contents of this repo to a location on disk.
 1. Ensure at least Node.js v6.9.1 is installed.
 1. Within the repo directory, type `npm install` to install all of the project's dependencies.
-1. To connect to your agent, you will need your API.AI client access token. To obtain it, open the project you
-created in *Part A* in the API.AI console. Click the gear icon near the top of the menu to see the
-project settings. Copy the `Client access token` from the `API keys` section of the `General` tab.
-1. To start the server, enter `APIAI_ACCESS_TOKEN=<client access token> node app.js` from within the repo
-directory, where `<client access token>` is replaced with the access token you copied in the previous step.
+1. To connect to your agent, you will need your Dialogflow project ID. To obtain it, open the project you
+created in *Part A* in the Dialogflow console. Click the gear icon near the top of the menu to see the
+project settings. Copy the `Project ID` from the `Google Project` section of the `General` tab.
+1. For authentication, you will need to download a service account key. To get this, click the `Service Account`
+email address that appears in the `Google Project` section of the `General` tab. In the resulting page, locate the
+same service account email address in the table, and click the three dots in the `Actions` column. Click `Create key`,
+select `JSON` and click `CREATE` to download a key file.
+1. To start the server, enter `DF_PROJECT_ID=<project ID from step 4> DF_SERVICE_ACCOUNT_PATH=<path to key file from step 5> node app.js`
+from within the repo directory, replacing the descriptions with the appropriate values. For example, you might specify
+`DF_PROJECT_ID=agent-human-handoff-sample DF_SERVICE_ACCOUNT_PATH=~/Download/keyfile.json node app.js`.
 1. You should see the text `Listening on *:3000`. The server is now ready to use.
 
 **Note:** If you see the error `Error: listen EADDRINUSE :::3000` when starting the server, there is
@@ -64,7 +69,7 @@ to connect to a different port.
 1. With the server running, open [http://localhost:3000/operator](http://localhost:3000/operator) in your browser
  to open the Operator interface. You should see a mostly empty page with the word 'Operator' and a chat form.
 1. In another browser tab, open [http://localhost:3000/customer](http://localhost:3000/customer). After loading,
-the client should immediately connect to the API.AI agent. You'll see the welcome message from the agent
+the client should immediately connect to the Dialogflow agent. You'll see the welcome message from the agent
 appear beneath the Customer title.
 1. Return to the Operator interface. You will see that a tab has appeared that represents the conversation
 with this customer. It will currently be empty.
@@ -90,15 +95,15 @@ Click this tab to view the conversation logs.
 the agent unable to determine the customer's intent twice in a row, it will automatically escalate to an operator.
 
 ## Explanation
-* The server communicates with the clients via Socket.IO. It initially sends all customer messages to API.AI
+* The server communicates with the clients via Socket.IO. It initially sends all customer messages to Dialogflow
 and returns the responses to the customer.
-* The server monitors the `context` property of API.AI's response for a specific context named 'operator_request'.
-When it sees this context, it stops routing this customer's messages to API.AI and allows the operator to respond.
-* The API.AI agent can apply this context in two modes.
+* The server monitors the `context` property of Dialogflow's response for a specific context named 'operator_request'.
+When it sees this context, it stops routing this customer's messages to Dialogflow and allows the operator to respond.
+* The Dialogflow agent can apply this context in two modes.
     * In one mode, it is applied to the `Output contexts` of the `Operator Request` intent, thus switching
     the customer to an operator when they explicitly ask for it.
     * In the other mode, it is applied to the `Output contexts` of the intent `Default Fallback Intent - fallback`.
-    To see this intent in the API.AI interface, click the downward arrow on the intent named `Default Fallback Intent`.
+    To see this intent in the Dialogflow interface, click the downward arrow on the intent named `Default Fallback Intent`.
     Because this intent is specified as the fallback intent for the default fallback intent, it will be triggered
     only if the user has failed to provide a matchable input twice in a row. The first unmatched input triggers the
     `Default Fallback Intent`. The second unmatched input triggers `Default Fallback Intent - fallback`. This causes
@@ -107,13 +112,13 @@ When it sees this context, it stops routing this customer's messages to API.AI a
 ### Part D: Creating your own implementation
 You can modify this sample as a basis for your own implementation, but please be aware of the limitations expressed above.
 
-When creating your own API.AI agent, you may wish to make use of the 
-[Support prebuilt agent](https://console.api.ai/api-client/#/agent//prebuiltAgents/Support). This agent provides a framework
-for answering common support-related inquiries and providing a channel for users to contact you. 
+When creating your own Dialogflow agent, you may wish to make use of the
+[Support prebuilt agent](https://console.dialogflow.com/api-client/#/agent//prebuiltAgents/Support). This agent provides a framework
+for answering common support-related inquiries and providing a channel for users to contact you.
 
 ## References and How to report bugs
 * If you find any issues, please open a bug here on GitHub.
-* Questions are answered on [StackOverflow](https://stackoverflow.com/questions/tagged/api.ai).
+* Questions are answered on [StackOverflow](https://stackoverflow.com/questions/tagged/dialogflow).
 
 ## How to make contributions?
 Please read and follow the steps in the CONTRIBUTING.md.
@@ -122,5 +127,6 @@ Please read and follow the steps in the CONTRIBUTING.md.
 See LICENSE.md.
 
 ## Terms
-Your use of this sample is subject to, and by using or downloading the sample files you agree to comply with, the [Google APIs Terms of Service](https://developers.google.com/terms/).
+Your use of this sample is subject to, and by using or downloading the sample files you agree to comply with, the
+[Google APIs Terms of Service](https://developers.google.com/terms/).
 

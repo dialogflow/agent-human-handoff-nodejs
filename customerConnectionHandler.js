@@ -30,11 +30,12 @@ class CustomerConnectionHandler extends ChatConnectionHandler {
       .then(() => this.router.customerStore.getOrCreateCustomer(customerId))
       .then(customer => {
         console.log('A customer connected: ', customer);
-        // If new, begin the API.AI conversation
+        // If new, begin the Dialogflow conversation
         if (customer.isNew) {
           return this.router._sendEventToAgent(customer)
-            .then(response => {
-              this._respondToCustomer(response.result.fulfillment.speech, this.socket);
+            .then(responses => {
+              const response = responses[0];
+              this._respondToCustomer(response.queryResult.fulfillmentText, this.socket);
             });
         }
         // If known, do nothing - they just reconnected after a network interruption
