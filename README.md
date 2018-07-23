@@ -1,11 +1,11 @@
 # Dialogflow: Agent to Human Handoff Sample
 
-This sample consists of a simple Dialogflow agent, a node.js server and a web
-interface that together demonstrate an approach for handing text-based conversations
-from an Dialogflow agent to a human operator.
+This sample consists of a simple Dialogflow agent, a Node.js server, and a web
+interface that together demonstrate an approach for handling text-based conversations
+from a Dialogflow agent to a human operator.
 
-**This extensively commented sample is designed as a learning tool and a platform for
-experimentation, not a finished solution.**
+**This sample is designed as a learning tool and a platform for
+experimentation, not as a finished solution.**
 
 ### Features
 * Agent will escalate to a human operator on-demand
@@ -35,69 +35,77 @@ connected customers are ignored.
 ## Setup Instructions
 
 ### Part A: Steps for Dialogflow
-1. Log in to the [Dialogflow Console](https://console.dialogflow.com).
-1. Create a new agent using the dropdown at the top of the left hand menu, next to the gear icon.
-If the menu is not visible, click the icon with three horizontal lines to open it.
-1. Type a name for your agent. Any name will work, but `agent-human-handoff-sample` is suggested.
-1. Click `Save` to save the project, and wait for it to complete.
-1. Click the gear icon near the top of the menu to see the project settings.
-1. Click the `Export and Import` tab.
-1. Click `RESTORE FROM ZIP`. Follow the directions to restore from the HumanHandoffDemonstrationAgent.zip
- in this repo.
+1. [Sign-up](https://console.dialogflow.com/api-client/authorize_url_google/nopopup) or [Log-in](https://console.dialogflow.com/api-client/#/login) to your Dialogflow account.
+2. In [Dialogflow's console](https://console.dialogflow.com), select **Create Agent** in the left navigation and fill in the required fields and **Save**.
+  + Name for your agent, i.e. `agent-human-handoff-sample`
+4. Select `Create`.
+5. Go to the settings ⚙ > **Export and Import** tab >  **Restore from zip**.
+    + Upload the `HumanHandoffDemonstrationAgent.zip` file located in this repo.
+
 
 ### Part B: Steps for Node.js
-1. Clone or download the contents of this repo to a location on disk.
-1. Ensure at least Node.js v6.9.1 is installed.
-1. Within the repo directory, type `npm install` to install all of the project's dependencies.
-1. To connect to your agent, you will need your Dialogflow project ID. To obtain it, open the project you
-created in *Part A* in the Dialogflow console. Click the gear icon near the top of the menu to see the
-project settings. Copy the `Project ID` from the `Google Project` section of the `General` tab.
-1. For authentication, you will need to download a service account key. To get this, click the `Service Account`
-email address that appears in the `Google Project` section of the `General` tab. In the resulting page, locate the
-same service account email address in the table, and click the three dots in the `Actions` column. Click `Create key`,
-select `JSON` and click `CREATE` to download a key file.
-1. To start the server, enter `DF_PROJECT_ID=<project ID from step 4> DF_SERVICE_ACCOUNT_PATH=<path to key file from step 5> node app.js`
-from within the repo directory, replacing the descriptions with the appropriate values. For example, you might specify
-`DF_PROJECT_ID=agent-human-handoff-sample DF_SERVICE_ACCOUNT_PATH=~/Download/keyfile.json node app.js`.
-1. You should see the text `Listening on *:3000`. The server is now ready to use.
+1. Download/clone this repo.
+2. Ensure at least Node.js v6.9.1 is installed.
+3. Within the repo directory, $ **npm install** to install all of the project's dependencies.
+4. To connect to your agent, you will need your Dialogflow Project ID.
+  + Back in Dialogflow console under **Settings** ⚙ > **General** tab > copy **Project ID**.
+5. For authentication, you will need to download a service account key.
+  + Right below **Project ID** > click **Service Account** email address.  
+  + In the resulting page, find the
+same service account email address in the table, and select the three dots under the **Actions** column > **Create key**, **JSON**, and then **CREATE** to download a key file.
+6. In terminal, to start the server:
+```shell
+$ DF_PROJECT_ID=<project ID> DF_SERVICE_ACCOUNT_PATH=<path to key file> node app.js
+```
+For example:
+ **$ DF_PROJECT_ID=**`agent-human-handoff-sample` **DF_SERVICE_ACCOUNT_PATH=**`~/Download/keyfile.json`** node app.js**
 
-**Note:** If you see the error `Error: listen EADDRINUSE :::3000` when starting the server, there is
-already a process listening on port 3000 on your system. Identify and close that process, or edit `app.js`
-to connect to a different port.
+7. In your terminal, you should see **Listening on *:3000** and the server is now running.<sup>A.</sup>
+
+  <sup>A.</sup> If you see `Error: listen EADDRINUSE :::3000` when starting the server, there is
+  already a process listening on port 3000 on your system. Identify and close that process, or edit `app.js`
+  to connect to a different port.
 
 ### Part C: Demonstration
-1. With the server running, open [http://localhost:3000/operator](http://localhost:3000/operator) in your browser
- to open the Operator interface. You should see a mostly empty page with the word 'Operator' and a chat form.
-1. In another browser tab, open [http://localhost:3000/customer](http://localhost:3000/customer). After loading,
+1. With the server running, go to the [Operator interface](http://localhost:3000/operator) in your browser.
+  + You should see a mostly empty page with the word 'Operator' and a chat form.
+2. Open up a new browser tab and go to [Customer interface](http://localhost:3000/customer).
+  + After loading,
 the client should immediately connect to the Dialogflow agent. You'll see the welcome message from the agent
 appear beneath the Customer title.
-1. Return to the Operator interface. You will see that a tab has appeared that represents the conversation
+3. Return to the Operator interface tab.
+  + You will see that a tab has appeared that represents the conversation
 with this customer. It will currently be empty.
-1. Return to the Customer interface. You can use the form to chat with the agent by clicking `Send` or hitting return.
-To demonstrate functional  conversation, try asking it `what is your purpose?`.
-1. Open the Operator interface. You will see the history of messages between the customer and the agent. If you
+4. Return to the Customer interface tab.
+  + You can use the form to chat with the agent With **Send** or return.
+  + To demonstrate functional  conversation, ask `what is your purpose?`.
+5. In Operator interface, you will see the history of messages between the customer and the agent. If you
 attempt to enter a message, you will see a warning that the customer has not yet been escalated.
-1. Open the Customer interface. To request an operator, ask a variation of `let me talk to a person`. The
-Operator interface will pop up a dialog box to alert the operator that a new escalation has occurred.
-1. If the Operator interface took control as a result of alert dialog, return to the Customer interface.
+6. Return to the Customer interface.
+  + To request an operator, ask a variation of `let me talk to a person`.
+  + The Operator interface will pop up a dialog box to alert the operator that a new escalation has occurred.
+7. If the Operator interface took control as a result of alert dialog, return to the Customer interface.
 You will see the system has responded with an introduction message from the operator. After this point,
 the operator can respond to the customer's messages freely.
-1. Still on the Customer interface, send another message (for example, `I'm having difficulty with my product`).
-1. Open the Operator interface. You will see the customer's message. You can use the form to respond.
-1. Switch back to the Customer interface. If you responded to their message in the previous step, you will
+8. Still on the Customer interface, send another message (for example, `I'm having difficulty with my product`).
+9. Open the Operator interface. You will see the customer's message. You can use the form to respond.
+10. Switch back to the Customer interface.
+  + If you responded to their message in the previous step, you will
 see your response in the chat log.
-1. Open a new browser tab and go to [http://localhost:3000/customer](http://localhost:3000/customer).
-1. In this new Customer interface, ask the agent something it doesn't understand (e.g. `I would like to book a flight`).
+11. In a new browser tab and go open a second [Customer interface](http://localhost:3000/customer).
+12. In this new Customer interface, ask the agent something it doesn't understand (e.g. `I would like to book a flight`).
  The agent will ask for clarification.
-1. Switch to the Operator interface. You will see that a second tab has appeared, representing the second customer.
+13. Switch to the Operator interface.
+  + You will see that a second tab has appeared, representing the second customer.
 Click this tab to view the conversation logs.
-1. Switch back to the new Customer interface and enter another arbitrary statement (e.g. `I want to book a flight`). With
+14. Switch back to the new Customer interface and enter another arbitrary statement (e.g. `I want to book a flight`).
+  + With
 the agent unable to determine the customer's intent twice in a row, it will automatically escalate to an operator.
 
 ## Explanation
 * The server communicates with the clients via Socket.IO. It initially sends all customer messages to Dialogflow
 and returns the responses to the customer.
-* The server monitors the `context` property of Dialogflow's response for a specific context named 'operator_request'.
+* The server monitors the `context` property of Dialogflow's response for a specific context named `operator_request`.
 When it sees this context, it stops routing this customer's messages to Dialogflow and allows the operator to respond.
 * The Dialogflow agent can apply this context in two modes.
     * In one mode, it is applied to the `Output contexts` of the `Operator Request` intent, thus switching
@@ -109,16 +117,16 @@ When it sees this context, it stops routing this customer's messages to Dialogfl
     `Default Fallback Intent`. The second unmatched input triggers `Default Fallback Intent - fallback`. This causes
     the `operator_request` context to be applied, triggering escalation by the server.
 
-### Part D: Creating your own implementation
+### Part D: Custom Implementation
 You can modify this sample as a basis for your own implementation, but please be aware of the limitations expressed above.
 
 When creating your own Dialogflow agent, you may wish to make use of the
-[Support prebuilt agent](https://console.dialogflow.com/api-client/#/agent//prebuiltAgents/Support). This agent provides a framework
+[Support Prebuilt Agent](https://console.dialogflow.com/api-client/#/agent//prebuiltAgents/Support), which provides a framework
 for answering common support-related inquiries and providing a channel for users to contact you.
 
 ## References and How to report bugs
 * If you find any issues, please open a bug here on GitHub.
-* Questions are answered on [StackOverflow](https://stackoverflow.com/questions/tagged/dialogflow).
+* Questions? [StackOverflow](https://stackoverflow.com/questions/tagged/dialogflow).
 
 ## How to make contributions?
 Please read and follow the steps in the CONTRIBUTING.md.
@@ -129,4 +137,3 @@ See LICENSE.md.
 ## Terms
 Your use of this sample is subject to, and by using or downloading the sample files you agree to comply with, the
 [Google APIs Terms of Service](https://developers.google.com/terms/).
-
