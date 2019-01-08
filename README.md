@@ -4,8 +4,7 @@ This sample consists of a simple Dialogflow agent, a Node.js server, and a web
 interface that together demonstrate an approach for handling text-based conversations
 from a Dialogflow agent to a human operator.
 
-**This sample is designed as a learning tool and a platform for
-experimentation, not as a finished solution.**
+**This sample is designed as a learning tool and experimentation. This is not as a finished solution nor a base platform for any production development.**
 
 ### Features
 * Agent will escalate to a human operator on-demand
